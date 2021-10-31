@@ -13,6 +13,8 @@ static const long spiClk = 20000000; // 20 MHz
 
 SPIClass * hspi = new SPIClass(HSPI);
 
+byte t_start = millis() / 1000;
+
 void setup() {
   hspi->begin(HSPI_SCLK, HSPI_MISO, HSPI_MOSI, HSPI_SS);
   pinMode(HSPI_SS, OUTPUT);
@@ -27,24 +29,36 @@ void loop() {
     send_buf[i] = (byte) i;
     recv_buf[i] = 0x00;
   }
+  send_buf[0] = (millis() / 1000) - t_start;
+
 
   BENCH_START
-
+  pinMode(HSPI_SS, OUTPUT);
   write_sram(send_buf, TEST_N_BYTES);
   read_sram(recv_buf, TEST_N_BYTES);
-
+  pinMode(HSPI_SS, INPUT);
   BENCH_END
 
   // recv_buf should == send_buf
   for (size_t i = 0; i < TEST_N_BYTES; i++) {
     if (send_buf[i] != recv_buf[i]) {
-      for (;;) {
-        Serial.println("++++++++++++++++++++++++++++");
-        Serial.println("ERROR: send_buf != recv_buf");
-        delay(1000);
-      }
+      Serial.println(i);
+      //      for (;;) {
+      Serial.println("++++++++++++++++++++++++++++");
+      Serial.print("i=");
+      Serial.print(i);
+      Serial.print("\tSend=");
+      Serial.print(send_buf[i]);
+      Serial.print("\tRecv=");
+      Serial.println(recv_buf[i]);
+      goto loop_end;
+      //      }
     }
   }
+
+  Serial.println("OK");
+loop_end:
+  delay(1000);
   //  for (size_t i = 0; i < TEST_N_BYTES; i++) {
   //    Serial.print(recv_buf[i]);
   //    Serial.print("\t");
